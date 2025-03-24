@@ -56,7 +56,17 @@ connectDB()
     // Rutas
     const routes = [
       require("./routes/esperaUvaRoutes"),
-      require("./routes/recepcionUvaRoutes"),
+        require("./routes/frioUvaRoutes"),
+        require("./routes/gasificadoUvaRoutes"),
+        require("./routes/ordenesUvaRoutes"),
+        require("./routes/ordenesUvaRoutes"),
+      
+        require("./routes/esperaRoutes"),
+        require("./routes/frioRoutes"),
+        require("./routes/gasificadoPreRoutes"),
+        require("./routes/ordenesRoutes"),
+        require("./routes/recepcionRoutes"),
+
       // ... otras rutas
     ];
 
