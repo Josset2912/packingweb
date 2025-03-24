@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "https://santaazul.com", // Reemplaza con tu dominio frontend
+    origin: "https://santaazul.orender.com", // Reemplaza con tu dominio frontend
     methods: ["GET", "POST"],
     credentials: true, // Si usas autenticación
   },
