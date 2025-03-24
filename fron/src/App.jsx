@@ -33,7 +33,7 @@ const TablaOrdenesUva = lazy(() => import("./components/TablaOrdenesUva"));
 let socket;
 const connectSocket = () => {
   // Usa la URL de tu backend en producción (HTTPS obligatorio):
-  socket = io("https://santaazul.com", {
+  socket = io("https://santaazul.onrender.com", {
     path: "/socket.io", // Ruta predeterminada
     secure: true, // Fuerza HTTPS
     reconnect: true, // Auto-reconexión

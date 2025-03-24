@@ -3,75 +3,99 @@ const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 const { connectDB } = require("./db");
+const sql = require("mssql"); // Asegúrate de tener esta importación
 
 const app = express();
 const server = http.createServer(app);
+
+// Configuración WebSocket para producción
 const io = new Server(server, {
   cors: {
-    origin: "https://santaazul.orender.com", // Reemplaza con tu dominio frontend
+    origin: [
+      "https://tudominio-frontend.com", // URL de tu frontend en producción
+      "https://santaazul.onrender.com", // URL de tu frontend si también está en Render
+    ],
     methods: ["GET", "POST"],
-    credentials: true, // Si usas autenticación
+    credentials: true,
   },
-  transports: ["websocket", "polling"], // Asegura compatibilidad
+  transports: ["websocket", "polling"],
+  pingTimeout: 60000, // 60 segundos (para evitar desconexiones en Render)
+  pingInterval: 25000, // 25 segundos
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000; // Render usa el puerto 10000
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "https://tudominio-frontend.com",
+    credentials: true,
+  })
+);
 
-// Función para emitir datos actualizados
+// Conexión mejorada a la base de datos
 const emitirDatosActualizados = async (tabla) => {
+  let pool;
   try {
-    const pool = await sql.connect(process.env.DB_CONFIG);
+    pool = await sql.connect(process.env.DB_CONFIG);
     const result = await pool.request().query(`SELECT * FROM ${tabla}`);
-    io.emit("actualizarDatos", { tabla, datos: result.recordset });
+    io.emit(`actualizarDatos:${tabla}`, result.recordset); // Eventos específicos por tabla
   } catch (error) {
     console.error(`Error obteniendo datos de ${tabla}:`, error);
+    // Reconexión automática en caso de error
+    setTimeout(() => emitirDatosActualizados(tabla), 5000);
+  } finally {
+    if (pool) pool.close();
   }
 };
 
-// Conectar a la base de datos antes de iniciar el servidor
+// Inicio del servidor optimizado
 connectDB()
   .then(() => {
-    // Importar rutas UVAS
-    const esperaUvaRoutes = require("./routes/esperaUvaRoutes");
-    const recepcionUvaRoutes = require("./routes/recepcionUvaRoutes");
-    const gasificadoUvaRoutes = require("./routes/gasificadoUvaRoutes");
-    const frioUvaRoutes = require("./routes/frioUvaRoutes");
-    const ordenesUvaRoutes = require("./routes/ordenesUvaRoutes");
+    // Rutas
+    const routes = [
+      require("./routes/esperaUvaRoutes"),
+      require("./routes/recepcionUvaRoutes"),
+      // ... otras rutas
+    ];
 
-    // Importa las demás rutas aquí ARANDANO
-    const ordenesRoutes = require("./routes/ordenesRoutes");
-    const gasificadoPreRoutes = require("./routes/gasificadoPreRoutes");
-    const esperaRoutes = require("./routes/esperaRoutes");
-    const recepcionRoutes = require("./routes/recepcionRoutes");
-    const frioRoutes = require("./routes/frioRoutes");
+    routes.forEach((route) => app.use(`/api/${route.basePath}`, route.router));
 
-    // Agregar las rutas uvas
-    app.use("/api/recepcion_uva", recepcionUvaRoutes);
-    app.use("/api/gasificado_uva", gasificadoUvaRoutes);
-    app.use("/api/espera_uva", esperaUvaRoutes);
-    app.use("/api/frio_uva", frioUvaRoutes);
-    app.use("/api/ordenes_uva", ordenesUvaRoutes);
-    // Agrega las demás rutas aquí ARANDANO
-    app.use("/api/ordenes", ordenesRoutes);
-    app.use("/api/gasificado_pre", gasificadoPreRoutes);
-    app.use("/api/espera", esperaRoutes);
-    app.use("/api/recepcion", recepcionRoutes);
-    app.use("/api/frio", frioRoutes);
-
-    // Socket.io lógica
+    // WebSocket events
     io.on("connection", (socket) => {
-      // Manejar desconexión
-      socket.on("disconnect", () => {});
+      console.log(`🟢 Cliente conectado: ${socket.id}`);
+
+      socket.on("disconnect", () => {
+        console.log(`🔴 Cliente desconectado: ${socket.id}`);
+      });
+
+      // Manejo de errores
+      socket.on("error", (err) => {
+        console.error("Error en Socket.IO:", err);
+      });
     });
 
-    // Iniciar el servidor con socket.io
-    server.listen(PORT, () => {});
-  })
-  .catch((error) => {});
+    // Health check endpoint
+    app.get("/health", (req, res) => {
+      res
+        .status(200)
+        .json({ status: "OK", websockets: io.engine.clientsCount });
+    });
 
-// Exportar io y emitirDatosActualizados para usarlos en controladores
-module.exports = { io, emitirDatosActualizados };
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
+      console.log(`🛰️  WebSockets disponibles en ws://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Error al iniciar el servidor:", error);
+    process.exit(1);
+  });
+
+// Exportaciones
+module.exports = {
+  io,
+  emitirDatosActualizados,
+  app, // Para testing
+};
