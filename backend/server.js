@@ -8,9 +8,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Permitir todas las conexiones (puedes personalizarlo)
+    origin: "https://santaazul.com", // Reemplaza con tu dominio frontend
     methods: ["GET", "POST"],
+    credentials: true, // Si usas autenticación
   },
+  transports: ["websocket", "polling"], // Asegura compatibilidad
 });
 
 const PORT = process.env.PORT || 5000;
@@ -33,8 +35,6 @@ const emitirDatosActualizados = async (tabla) => {
 // Conectar a la base de datos antes de iniciar el servidor
 connectDB()
   .then(() => {
-    console.log("✅ Conexión establecida con SQL Server");
-
     // Importar rutas UVAS
     const esperaUvaRoutes = require("./routes/esperaUvaRoutes");
     const recepcionUvaRoutes = require("./routes/recepcionUvaRoutes");

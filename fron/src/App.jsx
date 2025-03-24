@@ -32,7 +32,12 @@ const TablaOrdenesUva = lazy(() => import("./components/TablaOrdenesUva"));
 // Conectar con WebSocket (retrasado hasta después del render inicial)
 let socket;
 const connectSocket = () => {
-  socket = io("http://localhost:5000");
+  // Usa la URL de tu backend en producción (HTTPS obligatorio):
+  socket = io("https://santaazul.com", {
+    path: "/socket.io", // Ruta predeterminada
+    secure: true, // Fuerza HTTPS
+    reconnect: true, // Auto-reconexión
+  });
 };
 
 const App = () => {
@@ -47,17 +52,17 @@ const App = () => {
 
     const endpointMap = {
       Arándano: {
-        "RECEPCIÓN": "recepcion",
+        RECEPCIÓN: "recepcion",
         "GASIFICADO PRE FRÍO": "gasificado_pre",
-        "ESPERA": "espera",
-        "FRIO": "frio",
+        ESPERA: "espera",
+        FRIO: "frio",
         "ORDEN PRD": "ordenes",
       },
       Uva: {
-        "RECEPCIÓN": "recepcion_uva",
+        RECEPCIÓN: "recepcion_uva",
         "GASIFICADO-VOLCADO": "gasificado_uva",
-        "ESPERA": "espera_uva",
-        "FRIO": "frio_uva",
+        ESPERA: "espera_uva",
+        FRIO: "frio_uva",
         "ORDEN PRD": "ordenes_uva",
       },
     };
@@ -129,17 +134,17 @@ const App = () => {
   const renderTablas = () => {
     const tablaMap = {
       Arándano: {
-        "RECEPCIÓN": TablaRecepcionArandano,
+        RECEPCIÓN: TablaRecepcionArandano,
         "GASIFICADO PRE FRÍO": TablaGasificadoArandano,
-        "ESPERA": TablaEsperaArandano,
-        "FRIO": TablaFrioArandano,
+        ESPERA: TablaEsperaArandano,
+        FRIO: TablaFrioArandano,
         "ORDEN PRD": TablaOrdenesArandano,
       },
       Uva: {
-        "RECEPCIÓN": TablaRecepcionUva,
+        RECEPCIÓN: TablaRecepcionUva,
         "GASIFICADO-VOLCADO": TablaGasificadoUva,
-        "ESPERA": TablaEsperaUva,
-        "FRIO": TablaFrioUva,
+        ESPERA: TablaEsperaUva,
+        FRIO: TablaFrioUva,
         "ORDEN PRD": TablaOrdenesUva,
       },
     };
